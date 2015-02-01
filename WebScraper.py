@@ -4,8 +4,8 @@ import urllib
 import os
 import time
 
-output = open("testoutput.txt","w")
-csv_output = open("csv_output.txt","w")
+#output = open("testoutput.txt","w")
+#csv_output = open("csv_output.txt","w")
 home_url = "http://www.basketball-reference.com"
 player_home_url = "http://www.basketball-reference.com/players/"
 
@@ -59,8 +59,8 @@ def getPlayerBasicInformation(link):
 				haystack = get_rows[i].__str__()
 				result = re.search(needle_1,haystack)
 				player_page_url.append(result.group(1))
-				print result.group(1)									#This gives individual player url
-																		#Function call to read, parse and save individual player's data
+				print "****Fetching information for player with page: ",result.group(1)				#This gives individual player url
+				indvPlayerStats(result.group(1))			#Function call to read, parse and save individual player's data
 			get_rows_custom.append(get_rows[i])
 			#output.write(get_rows_custom.__str__())
 
@@ -104,6 +104,62 @@ def tableToCSV(all_data,link):
 	print "CSV table for profile information of players whose name begin with '",alphabet,"'is ready\n"
 
 
+
+
+
+##### Reading individual player's page and saving all stats#####
+def indvPlayerStats(rel_link):
+	
+	particular_player_url = home_url+rel_link	
+	needle_3='/players/(.?)/(.*).html'
+	res = re.search(needle_3,rel_link)
+	player_name=res.group(2)
+	#particular_player_url="http://www.basketball-reference.com/players/m/machasc01.html"
+
+	#player_name="acyqu01"
+	#particular_player_url = "http://www.basketball-reference.com/players/a/acyqu01.html"
+
+	player_html = urllib.urlopen(particular_player_url).read();
+	soup1 = BeautifulSoup(player_html)
+	print "Reading page"
+	get_stat_tables = soup1.find_all("div",{"class":"stw"})
+
+	#testoutput2 = open("testoutput2.txt","w")
+	#testoutput2.write(get_stat_tables.__str__())
+	needle_2 = '<div class="stw" id="(all_.*)">'
+
+	#testoutput3 = open("testoutput3.txt","w")
+	#csv_output1=open("stat_csv_table.txt","w")
+
+	result = re.findall(needle_2,get_stat_tables.__str__())			#List of all tables on this page
+	for i in range(len(result)):
+		print "****Fetching table",result[i],"****"
+		table_data=""
+		stat_table_data=[]
+		ind_table = soup1.find("div",{"id":result[i]})			#result[i] is the table name 'all_*'
+		#testoutput3.write(ind_table.__str__())
+		get_rows = ind_table.find_all('tr')
+		for each_row in get_rows:
+			text = ''.join(each_row.find_all(text=True))
+			stat_table_data.append(text)
+		filename= "player_stat_"+player_name+"_"+result[i]+".txt"
+		csv_stat_output = open(filename,"w")
+		tableSize = len(stat_table_data)
+		for i in range(0,tableSize,1):
+			row_len = len(stat_table_data[i])
+			for j in range(1,row_len,1):
+				if stat_table_data[i][j].__str__()!='\n':
+					table_data = table_data + stat_table_data[i][j]
+				else:
+					table_data = table_data + ","
+			
+
+			csv_stat_output.write(table_data)	
+			csv_stat_output.write("\n")
+			table_data=""
+
+
+
 ############# MAIN PROGRAM ################
 links_list = getAlphabetLinks()
 i = 0
@@ -117,52 +173,8 @@ for link in links_list:
 
 print "Players basic information saved!!"
 
+#print "Now fetching individual player's information"
+#indvPlayerStats("/players/m/machasc01.html")
 
-
-##### Reading individual player's page and saving all stats#####
-player_name="machasc01"
-particular_player_url="http://www.basketball-reference.com/players/m/machasc01.html"
-
-#player_name="acyqu01"
-#particular_player_url = "http://www.basketball-reference.com/players/a/acyqu01.html"
-
-player_html = urllib.urlopen(particular_player_url).read();
-soup1 = BeautifulSoup(player_html)
-print "Reading page"
-get_stat_tables = soup1.find_all("div",{"class":"stw"})
-
-testoutput2 = open("testoutput2.txt","w")
-testoutput2.write(get_stat_tables.__str__())
-needle_2 = '<div class="stw" id="(all_.*)">'
-
-testoutput3 = open("testoutput3.txt","w")
-csv_output1=open("stat_csv_table.txt","w")
-
-result = re.findall(needle_2,get_stat_tables.__str__())			#List of all tables on this page
-for i in range(len(result)):
-	print "****Fetching table",result[i],"****"
-	table_data=""
-	stat_table_data=[]
-	ind_table = soup1.find("div",{"id":result[i]})			#result[i] is the table name 'all_*'
-	#testoutput3.write(ind_table.__str__())
-	get_rows = ind_table.find_all('tr')
-	for each_row in get_rows:
-		text = ''.join(each_row.find_all(text=True))
-		stat_table_data.append(text)
-	filename= "player_stat_"+player_name+"_"+result[i]+".txt"
-	csv_stat_output = open(filename,"w")
-	tableSize = len(stat_table_data)
-	for i in range(0,tableSize,1):
-		row_len = len(stat_table_data[i])
-		for j in range(1,row_len,1):
-			if stat_table_data[i][j].__str__()!='\n':
-				table_data = table_data + stat_table_data[i][j]
-			else:
-				table_data = table_data + ","
-		
-
-		csv_stat_output.write(table_data)	
-		csv_stat_output.write("\n")
-		table_data=""
 
 
