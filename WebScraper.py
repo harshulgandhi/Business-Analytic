@@ -4,11 +4,6 @@ import urllib
 import os
 import time
 
-#output = open("testoutput.txt","w")
-#csv_output = open("csv_output.txt","w")
-home_url = "http://www.basketball-reference.com"
-player_home_url = "http://www.basketball-reference.com/players/"
-
 
 ##To get href for individual letters
 def getAlphabetLinks():
@@ -21,14 +16,9 @@ def getAlphabetLinks():
 	links_list = get_alphabet_section.find_all('a',href=True) 
 	for link in links_list:
 		i+=1
-		print link['href']
+		#print link['href']
 		if i == 25:
 			break
-	#href_url = get_alphabet_section.find_all('a')
-	#print href_url['href']
-	#output1 = open("testoutput1.txt","w")
-	#output1.write(get_alphabet_section['href'])
-	#output1.write(get_alphabet_section.__str__())
 	print "Fetching ",i," urls done\n"
 	return links_list
 
@@ -41,10 +31,10 @@ def getPlayerBasicInformation(link):
 	url = home_url+link.__str__()
 	print "\nCompiled URL is ",url,"\n"
 	html = urllib.urlopen(url).read();
+	time.sleep(1)
 	soup = BeautifulSoup(html)
 	player_table = soup.find("table",{"class":"sortable stats_table" }) 	#reading the players table
-	#print player_table.__str__()
-	#output.write(player_table.__str__())
+	
 	get_rows = player_table.find_all('tr')		#Getting individual rows
 	get_rows_custom = []
 	player_page_url=[]
@@ -114,22 +104,13 @@ def indvPlayerStats(rel_link):
 	needle_3='/players/(.?)/(.*).html'
 	res = re.search(needle_3,rel_link)
 	player_name=res.group(2)
-	#particular_player_url="http://www.basketball-reference.com/players/m/machasc01.html"
-
-	#player_name="acyqu01"
-	#particular_player_url = "http://www.basketball-reference.com/players/a/acyqu01.html"
 
 	player_html = urllib.urlopen(particular_player_url).read();
 	soup1 = BeautifulSoup(player_html)
 	print "Reading page"
 	get_stat_tables = soup1.find_all("div",{"class":"stw"})
 
-	#testoutput2 = open("testoutput2.txt","w")
-	#testoutput2.write(get_stat_tables.__str__())
 	needle_2 = '<div class="stw" id="(all_.*)">'
-
-	#testoutput3 = open("testoutput3.txt","w")
-	#csv_output1=open("stat_csv_table.txt","w")
 
 	result = re.findall(needle_2,get_stat_tables.__str__())			#List of all tables on this page
 	for i in range(len(result)):
@@ -137,7 +118,7 @@ def indvPlayerStats(rel_link):
 		table_data=""
 		stat_table_data=[]
 		ind_table = soup1.find("div",{"id":result[i]})			#result[i] is the table name 'all_*'
-		#testoutput3.write(ind_table.__str__())
+
 		get_rows = ind_table.find_all('tr')
 		for each_row in get_rows:
 			text = ''.join(each_row.find_all(text=True))
@@ -148,23 +129,29 @@ def indvPlayerStats(rel_link):
 		for i in range(0,tableSize,1):
 			row_len = len(stat_table_data[i])
 			for j in range(1,row_len,1):
-				if stat_table_data[i][j].__str__()!='\n':
-					table_data = table_data + stat_table_data[i][j]
-				else:
-					table_data = table_data + ","
+				try:
+					if stat_table_data[i][j].__str__()!='\n':		##Encountered unicode character problem
+						table_data = table_data + stat_table_data[i][j]
+					else:
+						table_data = table_data + ","
 			
+				except UnicodeEncodeError:
+					table_data = "NonAsciiCharacter"
 
 			csv_stat_output.write(table_data)	
 			csv_stat_output.write("\n")
 			table_data=""
-
-
+		
+	print "\n\n"		
 
 ############# MAIN PROGRAM ################
+
+home_url = "http://www.basketball-reference.com"
+player_home_url = "http://www.basketball-reference.com/players/"
 links_list = getAlphabetLinks()
 i = 0
 for link in links_list:
-	if(i==2):
+	if(i==25):
 		break
 	print link['href']
 	all_data,link1 = getPlayerBasicInformation(link['href'])
