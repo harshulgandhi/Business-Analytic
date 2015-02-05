@@ -27,6 +27,7 @@ def getAlphabetLinks():
 ##To get payer basic profile information in tabular form. This
 ##table is not in csv format!
 def getPlayerBasicInformation(link):
+	
 	global home_url
 	url = home_url+link.__str__()
 	print "\nCompiled URL is ",url,"\n"
@@ -42,15 +43,16 @@ def getPlayerBasicInformation(link):
 
 	##Getting only the rows where name is "<Strong>"
 	needle_0= "<strong>"
-	needle_1= '<a href="(/players/.*)">'
+	needle_1= '<a href="(/players/.*)">(.*)</a>'
 	for i in range(len(get_rows)):
 		if(re.search(needle_0,get_rows[i].__str__()) or i == 0):		#Looking for rows containing "strong" tag
 			if i > 0:
 				haystack = get_rows[i].__str__()
 				result = re.search(needle_1,haystack)
 				player_page_url.append(result.group(1))
+
 				print "****Fetching information for player with page: ",result.group(1)				#This gives individual player url
-				indvPlayerStats(result.group(1))			#Function call to read, parse and save individual player's data
+				indvPlayerStats(result.group(1),result.group(2))			#Function call to read, parse and save individual player's data
 			get_rows_custom.append(get_rows[i])
 			#output.write(get_rows_custom.__str__())
 
@@ -65,7 +67,7 @@ def getPlayerBasicInformation(link):
 	#print all_rows[1]
 	#output.write(all_data.__str__())
 	#tableToCSV(all_data)
-	return all_data,link.__str__()
+	return all_data,link.__str__()						#All data corresponding to each player not in csv format
 
 
 #Function to parse table into CSV format
@@ -75,7 +77,10 @@ def tableToCSV(all_data,link):
 	needle="/(.?)/"												#Getting alphabet for which tables is being converted
 	result = re.search(needle,link)
 	alphabet = result.group(1)
-	nameOfFile = os.path.join("basic profile/","csv_output_for_"+alphabet+".txt")
+	if not os.path.exists(alphabet):
+		os.makedirs(alphabet)
+	print "Created forlder for alphaber : ",alphabet
+	nameOfFile = os.path.join(alphabet,"basic_profile_for"+alphabet+".csv")
 	csv_output = open(nameOfFile,"w")
 	table_data=""
 	tableSize = len(all_data)
@@ -98,12 +103,13 @@ def tableToCSV(all_data,link):
 
 
 ##### Reading individual player's page and saving all stats#####
-def indvPlayerStats(rel_link):
+def indvPlayerStats(rel_link, player_name):
 	
 	particular_player_url = home_url+rel_link	
 	needle_3='/players/(.?)/(.*).html'
 	res = re.search(needle_3,rel_link)
-	player_name=res.group(2)
+	player_alphabet = res.group(1)
+	#player_name=res.group(2)
 
 	player_html = urllib.urlopen(particular_player_url).read();
 	soup1 = BeautifulSoup(player_html)
@@ -120,10 +126,17 @@ def indvPlayerStats(rel_link):
 		ind_table = soup1.find("div",{"id":result[i]})			#result[i] is the table name 'all_*'
 
 		get_rows = ind_table.find_all('tr')
+		'''
+		Parsing data for each player and
+		converting into csv format
+		'''
 		for each_row in get_rows:
 			text = ''.join(each_row.find_all(text=True))
 			stat_table_data.append(text)
-		filename= "player_stat_"+player_name+"_"+result[i]+".txt"
+		if not os.path.exists(player_alphabet+'/'+player_name):
+			os.makedirs(player_alphabet+'/'+player_name)
+		filename = os.path.join(player_alphabet+'/'+player_name,"Player_stat_"+player_name+'_'+result[i]+".csv")
+		#filename= "player_stat_"+player_name+"_"+result[i]+".csv"
 		csv_stat_output = open(filename,"w")
 		tableSize = len(stat_table_data)
 		for i in range(0,tableSize,1):
